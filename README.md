@@ -53,11 +53,11 @@ cd /ngs/16S-Demo/PRJEB27564/raw
 
 # Workflow
 
-### 1. dada2 tutorial
+### 1. cutadapt & DADA2 (1_dada2_tutorial.R)
 
-### 2. phyloseq tutorial
+### 2. phyloseq (2_phyloseq_tutorial.R)
 
-### 3. lefse tutorial
+### 3. LEfSe & GraPhlAn (3_lefse_tutorial.R)
 
-### 4. picrust2 ALDEx2 tutorial
+### 4. picrust2 & ALDEx2 (4_picrust2_tutorial.R)
 
