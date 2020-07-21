@@ -27,18 +27,18 @@ Please refer to my GitHub repository [here](https://github.com/ycl6/16S-rDNA-V3-
 ## Example folder structure
 
 ```
-/ngs/16S-rDNA-V3-V4-examples/run_trimming.pl                     # Perl script to run cutadapt
-/ngs/16S-rDNA-V3-V4-examples/PRJEB27564                          # project folder
-/ngs/16S-rDNA-V3-V4-examples/PRJEB27564/raw/*_1.fastq.gz         # raw fastq files, read 1
-/ngs/16S-rDNA-V3-V4-examples/PRJEB27564/raw/*_2.fastq.gz         # raw fastq files, read 2
-/ngs/16S-rDNA-V3-V4-examples/PRJEB27564/trimmed/*_1.fastq.gz     # cutadapt trimmed files, read 1
-/ngs/16S-rDNA-V3-V4-examples/PRJEB27564/trimmed/*_2.fastq.gz     # cutadapt trimmed files, read 2
-/ngs/16S-rDNA-V3-V4-examples/PRJEB27564/filt/*_1.fastq.gz        # dada2 trimmed files, read 1
-/ngs/16S-rDNA-V3-V4-examples/PRJEB27564/filt/*_1.fastq.gz        # dada2 trimmed files, read 2
-/ngs/16S-rDNA-V3-V4-examples/PRJEB27564/images                   # output images/PDFs
-/ngs/16S-rDNA-V3-V4-examples/PRJEB27564/outfiles                 # output files
-/ngs/16S-rDNA-V3-V4-examples/PRJEB27564/lefse                    # LEfSe & GraPhlAn output files
-/ngs/16S-rDNA-V3-V4-examples/PRJEB27564/picrust2_out_stratified  # picrust2 output files
+/ngs/16S-Demo/run_trimming.pl                     # Perl script to run cutadapt
+/ngs/16S-Demo/PRJEB27564                          # project folder
+/ngs/16S-Demo/PRJEB27564/raw/*_1.fastq.gz         # raw fastq files, read 1
+/ngs/16S-Demo/PRJEB27564/raw/*_2.fastq.gz         # raw fastq files, read 2
+/ngs/16S-Demo/PRJEB27564/trimmed/*_1.fastq.gz     # cutadapt trimmed files, read 1
+/ngs/16S-Demo/PRJEB27564/trimmed/*_2.fastq.gz     # cutadapt trimmed files, read 2
+/ngs/16S-Demo/PRJEB27564/filt/*_1.fastq.gz        # dada2 trimmed files, read 1
+/ngs/16S-Demo/PRJEB27564/filt/*_1.fastq.gz        # dada2 trimmed files, read 2
+/ngs/16S-Demo/PRJEB27564/images                   # output images/PDFs
+/ngs/16S-Demo/PRJEB27564/outfiles                 # output files
+/ngs/16S-Demo/PRJEB27564/lefse                    # LEfSe & GraPhlAn output files
+/ngs/16S-Demo/PRJEB27564/picrust2_out_stratified  # picrust2 output files
 ```
 
 ## Download demo data
