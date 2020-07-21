@@ -4,6 +4,8 @@
 
 -----
 
+**16S-Demo web version:** https://ycl6.github.io/16S-Demo/
+
 **16S-rDNA-V3-V4 repository:** https://github.com/ycl6/16S-rDNA-V3-V4
 
 **Demo Dataset:** [PRJEB27564](https://www.ncbi.nlm.nih.gov/bioproject/PRJEB27564) from *[Gut Microbiota in Parkinson's Disease: Temporal Stability and Relations to Disease Progression.](https://pubmed.ncbi.nlm.
@@ -53,11 +55,11 @@ cd /ngs/16S-Demo/PRJEB27564/raw
 
 # Workflow
 
-### 1. cutadapt & DADA2 (1_dada2_tutorial.R)
+### 1. cutadapt & DADA2 (1_dada2_tutorial.R; [HTML](https://ycl6.github.io/16S-Demo/1_dada2_tutorial.html))
 
-### 2. phyloseq (2_phyloseq_tutorial.R)
+### 2. phyloseq (2_phyloseq_tutorial.R; [HTML](https://ycl6.github.io/16S-Demo/2_phyloseq_tutorial.html))
 
-### 3. LEfSe & GraPhlAn (3_lefse_tutorial.R)
+### 3. LEfSe & GraPhlAn (3_lefse_tutorial.R; [HTML](https://ycl6.github.io/16S-Demo/3_lefse_tutorial.html))
 
-### 4. picrust2 & ALDEx2 (4_picrust2_tutorial.R)
+### 4. picrust2 & ALDEx2 (4_picrust2_tutorial.R; [HTML](https://ycl6.github.io/16S-Demo/4_picrust2_ALDEx2_tutorial.html))
 
