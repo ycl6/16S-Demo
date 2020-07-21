@@ -61,5 +61,5 @@ cd /ngs/16S-Demo/PRJEB27564/raw
 
 ### 3. LEfSe & GraPhlAn (3_lefse_tutorial.R; [HTML](https://ycl6.github.io/16S-Demo/3_lefse_tutorial.html))
 
-### 4. picrust2 & ALDEx2 (4_picrust2_tutorial.R; [HTML](https://ycl6.github.io/16S-Demo/4_picrust2_ALDEx2_tutorial.html))
+### 4. picrust2 & ALDEx2 (4_picrust2_tutorial.R; [HTML](https://ycl6.github.io/16S-Demo/4_picrust2_tutorial.html))
 
