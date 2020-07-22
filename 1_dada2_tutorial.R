@@ -140,16 +140,25 @@ head(list.files(fastq),15)
 head(list.files(trimmed),15)
 
 #' 
+#' # Build trimmed file lists
+#' 
+## ----build-trimmed-file-lists-------------------------------------------------
+fns = sort(list.files(trimmed, full.names = TRUE))
+fnFs = fns[grep("1.fastq.gz", fns)]     # Update the grep pattern when necessary
+fnRs = fns[grep("2.fastq.gz", fns)]     # Update the grep pattern when necessary
+sample.names = gsub(".1.fastq.gz", "", basename(fnFs))  # Update the gsub pattern when necessary
+
+# Check objects
+fnFs
+fnRs
+sample.names
+
+#' 
 #' # Inspect read quality profiles
 #' 
 #' We use the `plotQualityProfile` function to plot the quality profiles of the trimmed fastq files
 #' 
 ## ----plotQualityProfile, message = FALSE, cache = TRUE------------------------
-fns = sort(list.files(trimmed, full.names = TRUE))
-fnFs = fns[grep("1.fastq.gz", fns)]
-fnRs = fns[grep("2.fastq.gz", fns)]
-sample.names = gsub(".1.fastq.gz", "", basename(fnFs))
-
 # Plot quality profile of fastq files
 ii = 1:length(sample.names)
 pdf(paste0(images, "/plotQualityProfile.pdf"), width = 8, height = 8, pointsize = 12)
@@ -254,12 +263,42 @@ saveRDS(seqtab, "seqtab.rds")
 # saveRDS(seqtab[c(1:5),], "seqtab.rds")
 
 #' 
+#' # *\*Merge multiple runs*
+#' 
+#' This section elaborates a little about merging results from multiple sequencing run. You can merge sequence tables from multiple runs belonging to the same experiment or project before moving on to chimera removal and taxonomy assignment. In the example snippet below, we use `mergeSequenceTables` to combine 2 sequence tables.
+#' 
+#' > **Note:** Skip this step if you do not require merging multiple sequence tables
+#' 
+## ----mergeSequenceTables, eval = FALSE----------------------------------------
+## # Load sequence tables from multiple runs
+## seqtab1 = readRDS("/some-path/run1/seqtab.rds")
+## seqtab2 = readRDS("/some-path/run2/seqtab.rds")
+## 
+## # Check the dimensions and sample names
+## dim(seqtab1)
+## rownames(seqtab1)
+## dim(seqtab2)
+## rownames(seqtab2)
+## 
+## # Merge sequence table and remove chimeras
+## seqtab = mergeSequenceTables(seqtab1, seqtab2)
+## 
+## # To sum values of same sample from multiple sequence table (i.e. when a sample was re-sequenced due to low depth)
+## # seqtab = mergeSequenceTables(seqtab1, seqtab2, repeats = "sum")
+## 
+## # Check the dimension of the merged sequence table
+## dim(seqtab)
+
+#' 
+#' After obtaining the merged sequence table, you can continue with the below data processing steps
+#' 
 #' # Remove chimeras
 #' 
 ## ----removeBimeraDenovo, cache = TRUE-----------------------------------------
 seqtab.nochim = removeBimeraDenovo(seqtab, method = "consensus", multithread = TRUE, 
 				   verbose = TRUE)
 
+# Update the same names to exclude "fastq.gz" in name
 rownames(seqtab.nochim) = sample.names
 
 #' 
