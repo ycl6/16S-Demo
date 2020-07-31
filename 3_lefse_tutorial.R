@@ -217,6 +217,19 @@ write.table(expr2[,c(1:4,6)], file = "lefse/expr2.lefse_table.res.padj", sep = "
 #' 
 #' > **Note:** Update the coloring `lefse/expr1.colors` and `lefse/expr2.colors` if necessary. The colors should be defined in HSV (hue, saturation, value) scale
 #' 
+#' Regarding the color file format:
+#' 
+#' - The spacing between the group name and HSV scales should be **tab**, not space
+#' - The spacing between the HSV scales should be **space** not tab
+#' - There should be no new line at the end of the file
+#' 
+#' ```
+#' A       150., 100., 53.
+#' B       217., 100., 91.
+#' C       4., 85., 84.
+#' D       39., 100., 100.
+#' ```
+#' 
 #' Patient vs. control at baseline (expr1)
 #' 
 ## ----plot-cladogram-1, cache = TRUE-------------------------------------------
