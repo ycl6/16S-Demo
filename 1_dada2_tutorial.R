@@ -35,9 +35,33 @@
 #' 
 #' -----
 #' 
-#' # Primer trimming using `cutadapt`
+#' # Primer trimming
 #' 
-#' You can use the included Perl script `run_trimming.pl` to perform primer trimming, where the raw fastq files are placed in the `raw` folder
+#' The PCR primer sequences can be removed using any primer or adapter trimming softwares. The `cutadapt` software offers options to specify primer/adapter sequences from both 5' and 3' ends and also from second read of both ends, making it an ideal choice to perform this task. 
+#' 
+#' The parameters `-a` and `-g` specify adapters to be removed from each read. The `-A` and `-G` options work like their `-a` and `-g` counterparts, but are applied to the second read in each pair. So the trimming parameters would be like this:
+#' 
+#' ```
+#' cutadapt \
+#' 	-g 5'-end-adapter-seq \
+#' 	-a 3'-end-adapter-seq \
+#' 	-G 5'-end-adapter-from-second-read-seq \
+#' 	-A 3'-end-adapter-from-second-read-seq
+#' ```
+#' 
+#' For a 341F (5’-CCTACGGGNGGCWGCAG-3’) and 785R (5’-GACTACHVGGGTATCTAATCC-3’) primer set, the trimming parameters would be like this:
+#' 
+#' ```
+#' cutadapt \
+#' 	-g CCTACGGGNGGCWGCAG \		# 341F seq
+#' 	-a GGATTAGATACCCBDGTAGTC \	# 785R reverse complement seq
+#' 	-G GACTACHVGGGTATCTAATCC \	# 785R seq
+#' 	-A CTGCWGCCNCCCGTAGG 		# 341F reverse complement seq
+#' ```
+#' 
+#' You can use the included Perl script `run_trimming.pl` to perform primer trimming. It would determine the reverse complement sequences of the primer set you provided and perform trimming. 
+#' 
+#' In the below example, the raw fastq files are placed in the `raw` folder and the trimmed fastq files will be placed in the pre-defined folder named `trimmed`.
 #' 
 #' ```
 #' cd /ngs/16S-Demo
@@ -46,7 +70,7 @@
 #' perl run_trimming.pl PRJEB27564 raw CCTACGGGNGGCWGCAG GACTACHVGGGTATCTAATCC
 #' ```
 #' 
-#' Or follow the instruction below to run `cutadapt` within R
+#' Or follow the instruction below to run `cutadapt` within R.
 #' 
 #' # Start `R`
 #' 
@@ -65,7 +89,7 @@ library("phyloseq")
 library("ggplot2")
 
 #' 
-#' Change the `fastq` path to correspond to the location of the raw fastq files
+#' Change the `fastq` path to correspond to the location of the raw fastq files.
 #' 
 ## ----set-path-----------------------------------------------------------------
 fastq = "raw"           # raw fastq files
@@ -156,7 +180,7 @@ sample.names
 #' 
 #' # Inspect read quality profiles
 #' 
-#' We use the `plotQualityProfile` function to plot the quality profiles of the trimmed fastq files
+#' We use the `plotQualityProfile` function to plot the quality profiles of the trimmed fastq files.
 #' 
 ## ----plotQualityProfile, message = FALSE, cache = TRUE------------------------
 # Plot quality profile of fastq files
@@ -176,7 +200,7 @@ invisible(dev.off())
 #' 
 #' # Filter and trim
 #' 
-#' Remember to review **plotQualityProfile.pdf** to select the best paramters for `truncLen` argument
+#' Remember to review **plotQualityProfile.pdf** to select the best paramters for `truncLen` argument.
 #' 
 ## ----filterAndTrim, message = FALSE, cache = TRUE-----------------------------
 # Set paths to the dada2-filterd files
@@ -199,7 +223,7 @@ head(out, 10)
 #' 
 #' # Learn the Error Rates
 #' 
-#' Use the `learnErrors` function to perform dereplication and learn the error rates. The `derepFastq` function used in past workflow has been intergrated into `learnErrors` function
+#' Use the `learnErrors` function to perform dereplication and learn the error rates. The `derepFastq` function used in past workflow has been intergrated into `learnErrors` function.
 #' 
 ## ----learnErrors, cache = TRUE------------------------------------------------
 errF = learnErrors(filtFs, multithread = TRUE)
@@ -223,7 +247,7 @@ invisible(dev.off())
 #' 
 #' # Sample Inference
 #' 
-#' We now apply the core sample inference algorithm to the filtered and trimmed sequence data
+#' We now apply the core sample inference algorithm to the filtered and trimmed sequence data.
 #' 
 #' > **Note:** By default, the `dada` function processes each sample independently (i.e. `pool = FALSE`), if your samples are from an extremely diverse community (e.g. soil), pooling (i.e. `pool = TRUE`) or pseudo-pooling (recommended; i.e. `pool = pseudo`) might help in identifying the rare ASVs in each sample
 #' 
@@ -234,7 +258,7 @@ dadaRs = dada(filtRs, err = errR, pool = FALSE, multithread = TRUE)
 #' 
 #' # Merge paired reads
 #' 
-#' We now merge the forward and reverse reads together to obtain the full denoised sequences
+#' We now merge the forward and reverse reads together to obtain the full denoised sequences.
 #' 
 ## ----mergePairs, message = FALSE, cache = TRUE--------------------------------
 mergers = mergePairs(dadaFs, filtFs, dadaRs, filtRs, verbose = TRUE)
@@ -242,19 +266,19 @@ mergers = mergePairs(dadaFs, filtFs, dadaRs, filtRs, verbose = TRUE)
 #' 
 #' # Construct sequence table
 #' 
-#' We now construct an amplicon sequence variant (ASV) table
+#' We now construct an amplicon sequence variant (ASV) table.
 #' 
 ## ----makeSequenceTable--------------------------------------------------------
 seqtab = makeSequenceTable(mergers)
 
 #' 
-#' View the length frequency distribution with `table`
+#' View the length frequency distribution with `table`.
 #' 
 ## -----------------------------------------------------------------------------
 table(nchar(getSequences(seqtab)))
 
 #' 
-#' Save sequence table
+#' Save sequence table.
 #' 
 ## ----save-rds-----------------------------------------------------------------
 saveRDS(seqtab, "seqtab.rds")
@@ -290,7 +314,7 @@ saveRDS(seqtab, "seqtab.rds")
 ## dim(seqtab)
 
 #' 
-#' After obtaining the merged sequence table, you can continue with the below data processing steps
+#' After obtaining the merged sequence table, you can continue with the below data processing steps.
 #' 
 #' # Remove chimeras
 #' 
@@ -302,14 +326,14 @@ seqtab.nochim = removeBimeraDenovo(seqtab, method = "consensus", multithread = T
 rownames(seqtab.nochim) = sample.names
 
 #' 
-#' View the dimensions of `seqtab` and `seqtab.nochim`
+#' View the dimensions of `seqtab` and `seqtab.nochim`.
 #' 
 ## -----------------------------------------------------------------------------
 dim(seqtab)
 dim(seqtab.nochim)
 
 #' 
-#' Print the proportion of non-chimeras in merged sequence reads
+#' Print the proportion of non-chimeras in merged sequence reads.
 #' 
 ## -----------------------------------------------------------------------------
 sum(seqtab.nochim)/sum(seqtab)
@@ -333,7 +357,7 @@ write.table(track, file = paste0(outfiles, "/track.txt"), sep = "\t", quote = F,
 #' 
 #' # Assign taxonomy
 #' 
-#' Set the full-path to the Silva and NCBI database
+#' Set the full-path to the Silva and NCBI database.
 #' 
 ## ----set-db-path, eval = FALSE------------------------------------------------
 ## dbpath = "/path-to-db/"
@@ -345,7 +369,7 @@ write.table(track, file = paste0(outfiles, "/track.txt"), sep = "\t", quote = F,
 #' 
 
 #' 
-#' Use the `assignTaxonomy` function to classifies sequences against **SILVA** reference training dataset `ref1`, and use the `assignSpecies` function to perform taxonomic assignment to the species level by exact matching against **SILVA** `ref2` and **NCBI** reference datasets `ref3`
+#' Use the `assignTaxonomy` function to classifies sequences against **SILVA** reference training dataset `ref1`, and use the `assignSpecies` function to perform taxonomic assignment to the species level by exact matching against **SILVA** `ref2` and **NCBI** reference datasets `ref3`.
 #' 
 ## ----assignTaxonomy, cache = TRUE---------------------------------------------
 taxtab = assignTaxonomy(seqtab.nochim, refFasta = ref1, minBoot = 80, 
@@ -358,7 +382,7 @@ spec_ncbi = assignSpecies(getSequences(seqtab.nochim), ref3, allowMultiple = FAL
 			  tryRC = TRUE, verbose = TRUE)
 
 #' 
-#' Combine species-level taxonomic assignment from 2 reference sources
+#' Combine species-level taxonomic assignment from 2 reference sources.
 #' 
 ## ----combine-assignment-------------------------------------------------------
 SVformat = paste("%0",nchar(as.character(ncol(seqtab.nochim))),"d", sep = "")
@@ -417,7 +441,7 @@ print(paste("Of which", sum(!is.na(taxtab$tax[,"Species"])),
 #' 
 #' # Multiple sequence alignment
 #' 
-#' Prepare a `data.frame` `df` from `seqtab.nochim` and `taxtab`
+#' Prepare a `data.frame` `df` from `seqtab.nochim` and `taxtab`.
 #' 
 ## ----prepare-df---------------------------------------------------------------
 df = data.frame(sequence = colnames(seqtab.nochim), abundance = colSums(seqtab.nochim), 
@@ -428,13 +452,13 @@ rownames(df) = df$id
 df = df[order(df$id),2:ncol(df)]
 
 #' 
-#' Performs alignment of multiple unaligned sequences
+#' Performs alignment of multiple unaligned sequences.
 #' 
 ## ----alignseqs, cache = TRUE--------------------------------------------------
 alignment = DECIPHER::AlignSeqs(Biostrings::DNAStringSet(setNames(df$sequence, df$id)), anchor = NA)
 
 #' 
-#' Export alignment
+#' Export alignment.
 #' 
 ## ----export-alignment, cache = TRUE-------------------------------------------
 phang.align = phangorn::phyDat(as(alignment, "matrix"), type = "DNA")
@@ -444,7 +468,7 @@ phangorn::write.phyDat(phang.align, file = "alignment.aln", format = "phylip")
 #' 
 #' # Construct phylogenetic tree
 #' 
-#' Set the full-path to the RAxML and RAxML-NG
+#' Set the full-path to the RAxML and RAxML-NG.
 #' 
 ## ----set-raxml-path, eval = FALSE---------------------------------------------
 ## raxml = "/path-to-raxml"
@@ -453,7 +477,7 @@ phangorn::write.phyDat(phang.align, file = "alignment.aln", format = "phylip")
 #' 
 
 #' 
-#' Run RAxML and RAxML-NG
+#' Run RAxML and RAxML-NG.
 #' 
 ## ----run-raxml, results = "hide", cache = TRUE--------------------------------
 system2(raxml, args = c("-T 2", "-f E", "-p 1234", "-x 5678", "-m GTRCAT", "-N 1", 
@@ -464,7 +488,7 @@ system2(raxmlng, args = c("--evaluate", "--force", "--seed 1234", "--log progres
 			  "--tree RAxML_fastTree.raxml_tree_GTRCAT", "--prefix GTRCAT"))
 
 #' 
-#' Import tree using the `read_tree` function from `phyloseq`
+#' Import tree using the `read_tree` function from `phyloseq`.
 #' 
 ## ----import-tree--------------------------------------------------------------
 raxml_tree = read_tree("GTRCAT.raxml.bestTree")
@@ -489,7 +513,7 @@ head(samdf)
 #' 
 #' # Handoff to `phyloseq`
 #' 
-#' Prepare `new_seqtab` and `tax` data.frames containing abundance and taxonomy information respectively
+#' Prepare `new_seqtab` and `tax` data.frames containing abundance and taxonomy information respectively.
 #' 
 ## ----create-tax---------------------------------------------------------------
 new_seqtab = seqtab.nochim
@@ -506,7 +530,7 @@ tax$Family = as.character(tax$Family)
 tax$Genus = as.character(tax$Genus)
 
 #' 
-#' Construct a `phyloseq` object
+#' Construct a `phyloseq` object.
 #' 
 ## ----create-ps-obj------------------------------------------------------------
 ps = phyloseq(tax_table(as.matrix(tax)), 
