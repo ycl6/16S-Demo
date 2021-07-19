@@ -85,6 +85,8 @@
 ## ----load-libraries, message = FALSE------------------------------------------
 library("dada2")
 library("data.table")
+library("DECIPHER")
+library("phangorn")
 library("phyloseq")
 library("ggplot2")
 
@@ -361,8 +363,8 @@ write.table(track, file = paste0(outfiles, "/track.txt"), sep = "\t", quote = F,
 #' 
 ## ----set-db-path, eval = FALSE------------------------------------------------
 ## dbpath = "/path-to-db/"
-## ref1 = paste0(dbpath, "silva_nr_v138_train_set.fa.gz")
-## ref2 = paste0(dbpath, "silva_species_assignment_v138.fa.gz")
+## ref1 = paste0(dbpath, "silva_nr99_v138.1_train_set.fa.gz")
+## ref2 = paste0(dbpath, "silva_species_assignment_v138.1.fa.gz")
 ## ref3 = paste0(dbpath, "16SMicrobial.fa.gz")
 ## 
 
@@ -372,14 +374,16 @@ write.table(track, file = paste0(outfiles, "/track.txt"), sep = "\t", quote = F,
 #' Use the `assignTaxonomy` function to classifies sequences against **SILVA** reference training dataset `ref1`, and use the `assignSpecies` function to perform taxonomic assignment to the species level by exact matching against **SILVA** `ref2` and **NCBI** reference datasets `ref3`.
 #' 
 ## ----assignTaxonomy, cache = TRUE---------------------------------------------
-taxtab = assignTaxonomy(seqtab.nochim, refFasta = ref1, minBoot = 80, 
-			tryRC = TRUE, outputBootstraps = TRUE, verbose = TRUE, multithread = TRUE)
+# Extracts the sequences
+seqs = getSequences(seqtab.nochim)
 
-spec_silva = assignSpecies(getSequences(seqtab.nochim), ref2, allowMultiple = FALSE, 
-			   tryRC = TRUE, verbose = TRUE)
+set.seed(12345)
+taxtab = assignTaxonomy(seqs, refFasta = ref1, minBoot = 80, tryRC = TRUE, verbose = TRUE, 
+			outputBootstraps = TRUE, multithread = TRUE)
 
-spec_ncbi = assignSpecies(getSequences(seqtab.nochim), ref3, allowMultiple = FALSE, 
-			  tryRC = TRUE, verbose = TRUE)
+spec_silva = assignSpecies(seqs, ref2, allowMultiple = FALSE, tryRC = TRUE, verbose = TRUE)
+
+spec_ncbi = assignSpecies(seqs, ref3, allowMultiple = FALSE, tryRC = TRUE, verbose = TRUE)
 
 #' 
 #' Combine species-level taxonomic assignment from 2 reference sources.
@@ -444,8 +448,7 @@ print(paste("Of which", sum(!is.na(taxtab$tax[,"Species"])),
 #' Prepare a `data.frame` `df` from `seqtab.nochim` and `taxtab`.
 #' 
 ## ----prepare-df---------------------------------------------------------------
-df = data.frame(sequence = colnames(seqtab.nochim), abundance = colSums(seqtab.nochim), 
-		stringsAsFactors = FALSE)
+df = data.frame(sequence = seqs, abundance = colSums(seqtab.nochim), stringsAsFactors = FALSE)
 df$id = svid
 df = merge(df, as.data.frame(taxtab), by = "row.names")
 rownames(df) = df$id
@@ -455,15 +458,15 @@ df = df[order(df$id),2:ncol(df)]
 #' Performs alignment of multiple unaligned sequences.
 #' 
 ## ----alignseqs, cache = TRUE--------------------------------------------------
-alignment = DECIPHER::AlignSeqs(Biostrings::DNAStringSet(setNames(df$sequence, df$id)), anchor = NA)
+alignment = AlignSeqs(Biostrings::DNAStringSet(setNames(df$sequence, df$id)), anchor = NA)
 
 #' 
 #' Export alignment.
 #' 
 ## ----export-alignment, cache = TRUE-------------------------------------------
-phang.align = phangorn::phyDat(as(alignment, "matrix"), type = "DNA")
-phangorn::write.phyDat(phang.align, file = "alignment.fasta", format = "fasta")
-phangorn::write.phyDat(phang.align, file = "alignment.aln", format = "phylip")
+phang.align = phyDat(as(alignment, "matrix"), type = "DNA")
+write.phyDat(phang.align, file = "alignment.fasta", format = "fasta")
+write.phyDat(phang.align, file = "alignment.aln", format = "phylip")
 
 #' 
 #' # Construct phylogenetic tree
@@ -471,8 +474,8 @@ phangorn::write.phyDat(phang.align, file = "alignment.aln", format = "phylip")
 #' Set the full-path to the RAxML and RAxML-NG.
 #' 
 ## ----set-raxml-path, eval = FALSE---------------------------------------------
-## raxml = "/path-to-raxml"
-## raxmlng = "/path-to-raxml-ng"
+## raxml = "/path-to-raxml-binary"		# e.g. /usr/local/bin/raxmlHPC-PTHREADS-SSE3
+## raxmlng = "/path-to-raxml-ng-binary"	# e.g. /usr/local/bin/raxml-ng
 
 #' 
 

@@ -56,10 +56,12 @@ library("ggplot2")
 library("ggbeeswarm")
 library("ggrepel")
 library("vegan")
-library("dplyr")
+library("tidyverse")
 
 #' 
 #' Set the full-path to additional scripts
+#' 
+#' > **Note:** Remember to change the PATH to the script accordingly
 #' 
 ## ----set-taxa_summary-Rscript-path, eval = FALSE------------------------------
 ## source("/path-to-script/taxa_summary.R", local = TRUE)
@@ -93,7 +95,8 @@ ps0 = subset_taxa(ps, Kingdom == "Bacteria" & !is.na(Phylum) & !is.na(Class) &
 #' ## Create a total counts data.table
 #' 
 ## ----create-tdt, warning = FALSE, fig.width = 6, fig.height = 6, fig.align = "center", dpi = 100----
-tdt = data.table(tax_table(ps0), TotalCounts = taxa_sums(ps0), SV = taxa_names(ps0))
+tdt = data.table(setDT(as.data.frame(tax_table(ps0))), 
+		 TotalCounts = taxa_sums(ps0), SV = taxa_names(ps0))
 
 tdt
 
@@ -110,8 +113,8 @@ setkey(taxcumsum, TotalCounts)
 taxcumsum[, CumSum := cumsum(N)]
 
 # Plot the cumulative sum of ASVs against the total counts
-pCumSum = ggplot(taxcumsum, aes(TotalCounts, CumSum)) + geom_point() + 
-	theme_bw() + xlab("Filtering Threshold") + ylab("ASV Filtered")
+pCumSum = ggplot(taxcumsum, aes(TotalCounts, CumSum)) + geom_point() + theme_bw() + 
+	xlab("Filtering Threshold") + ylab("ASV Filtered")
 
 png("images/FilterTaxa-taxa-abundance.png", width = 8, height = 8, units = "in", res = 300)
 gridExtra::grid.arrange(pCumSum, pCumSum + xlim(0, 500), 
@@ -129,8 +132,7 @@ mdt = fast_melt(ps0)
 
 mdt
 
-prevdt = mdt[, list(Prevalence = sum(count > 0), 
-		    TotalCounts = sum(count), 
+prevdt = mdt[, list(Prevalence = sum(count > 0), TotalCounts = sum(count), 
 		    MaxCounts = max(count)), by = TaxaID]
 
 prevdt
@@ -142,8 +144,8 @@ prevdt[(Prevalence == 1), .N]	# singletons
 
 prevdt[(Prevalence == 2), .N]	# doubletons
 
-ggplot(prevdt, aes(MaxCounts)) + geom_histogram(bins = 100) + xlim(0, 500) +
-	theme_bw() + ggtitle("Histogram of Maximum TotalCounts")
+ggplot(prevdt, aes(MaxCounts)) + geom_histogram(bins = 100) + xlim(0, 500) + theme_bw() + 
+	ggtitle("Histogram of Maximum TotalCounts")
 
 table(prevdt$MaxCounts)[1:50]
 
@@ -250,25 +252,27 @@ write.table(as.data.table(tax_table(ps1), keep.rownames = T), file = "outfiles/e
 #' 
 #' ## Create raw abundance tables
 #' 
+#' 
 ## ----output-abund-tables, warning = FALSE, cache = TRUE-----------------------
-write.table(reshape2::dcast(ps1 %>% psmelt() %>% arrange(OTU) %>% rename(ASV = OTU), 
-	    ASV+Kingdom+Phylum+Class+Order+Family+Genus+Species~Sample_ID, value.var = "Abundance"), 
+write.table(ps1 %>% psmelt() %>% arrange(OTU) %>% rename(ASV = OTU) %>%
+	    select(ASV, Kingdom, Phylum, Class, Order, Family, Genus, Species, Sample_ID, Abundance) %>%
+	    spread(Sample_ID, Abundance),
 	    file = "outfiles/expr.abundance.all.txt", sep = "\t", 
 	    quote = F, row.names = F, col.names = T)
-write.table(reshape2::dcast(ps1 %>% tax_glom(taxrank = "Phylum") %>% psmelt(), 
-	    Phylum~Sample_ID, value.var = "Abundance"), 
+write.table(ps1 %>% tax_glom(taxrank = "Phylum") %>% psmelt() %>%
+	    select(Phylum, Sample_ID, Abundance) %>% spread(Sample_ID, Abundance),
 	    file = "outfiles/expr.abundance.abphy.txt", sep = "\t", 
 	    quote = F, row.names = F, col.names = T)
-write.table(reshape2::dcast(ps1 %>% tax_glom(taxrank = "Class") %>% psmelt(), 
-	    Class~Sample_ID, value.var = "Abundance"), 
+write.table(ps1 %>% tax_glom(taxrank = "Class") %>% psmelt() %>%
+	    select(Class, Sample_ID, Abundance) %>% spread(Sample_ID, Abundance),
 	    file = "outfiles/expr.abundance.abcls.txt", sep = "\t", 
 	    quote = F, row.names = F, col.names = T)
-write.table(reshape2::dcast(ps1 %>% tax_glom(taxrank = "Family") %>% psmelt(), 
-	    Family~Sample_ID, value.var = "Abundance"), 
+write.table(ps1 %>% tax_glom(taxrank = "Family") %>% psmelt() %>%
+	    select(Family, Sample_ID, Abundance) %>% spread(Sample_ID, Abundance),
 	    file = "outfiles/expr.abundance.abfam.txt", sep = "\t", 
 	    quote = F, row.names = F, col.names = T)
-write.table(reshape2::dcast(ps1 %>% tax_glom(taxrank = "Genus") %>% psmelt(), 
-	    Genus~Sample_ID, value.var = "Abundance"), 
+write.table(ps1 %>% tax_glom(taxrank = "Genus") %>% psmelt() %>%
+	    select(Genus, Sample_ID, Abundance) %>% spread(Sample_ID, Abundance),
 	    file = "outfiles/expr.abundance.abgen.txt", sep = "\t", 
 	    quote = F, row.names = F, col.names = T)
 
@@ -278,31 +282,32 @@ write.table(reshape2::dcast(ps1 %>% tax_glom(taxrank = "Genus") %>% psmelt(),
 #' Use the `transform_sample_counts` function to transforms the sample counts of a taxa abundance matrix according to the provided function, in the case the fractions of the whole sum
 #' 
 ## ----output-rel-abund-tables, warning = FALSE, cache = TRUE-------------------
-write.table(reshape2::dcast(ps1 %>% transform_sample_counts(function(x) {x/sum(x)} ) %>% 
-	psmelt() %>% arrange(OTU) %>% rename(ASV = OTU), 
-	ASV+Kingdom+Phylum+Class+Order+Family+Genus+Species~Sample_ID, value.var = "Abundance"), 
-	file = "outfiles/expr.relative_abundance.all.txt", sep = "\t", 
-	quote = F, row.names = F, col.names = T)
-write.table(reshape2::dcast(ps1 %>% tax_glom(taxrank = "Phylum") %>% 
-	transform_sample_counts(function(x) {x/sum(x)} ) %>% 
-	psmelt(), Phylum~Sample_ID, value.var = "Abundance"), 
-	file = "outfiles/expr.relative_abundance.abphy.txt", sep = "\t", 
-	quote = F, row.names = F, col.names = T)
-write.table(reshape2::dcast(ps1 %>% tax_glom(taxrank = "Class") %>% 
-	transform_sample_counts(function(x) {x/sum(x)} ) %>% 
-	psmelt(), Class~Sample_ID, value.var = "Abundance"), 
-	file = "outfiles/expr.relative_abundance.abcls.txt", sep = "\t", 
-	quote = F, row.names = F, col.names = T)
-write.table(reshape2::dcast(ps1 %>% tax_glom(taxrank = "Family") %>% 
-	transform_sample_counts(function(x) {x/sum(x)} ) %>% 
-	psmelt(), Family~Sample_ID, value.var = "Abundance"), 
-	file = "outfiles/expr.relative_abundance.abfam.txt", sep = "\t", 
-	quote = F, row.names = F, col.names = T)
-write.table(reshape2::dcast(ps1 %>% tax_glom(taxrank = "Genus") %>% 
-	transform_sample_counts(function(x) {x/sum(x)} ) %>% 
-	psmelt(), Genus~Sample_ID, value.var = "Abundance"), 
-	file = "outfiles/expr.relative_abundance.abgen.txt", sep = "\t", 
-	quote = F, row.names = F, col.names = T)
+write.table(ps1 %>% transform_sample_counts(function(x) {x/sum(x)} ) %>% psmelt() %>%
+	    arrange(OTU) %>% rename(ASV = OTU) %>%
+	    select(ASV, Kingdom, Phylum, Class, Order, Family, Genus, Species, Sample_ID, Abundance) %>%
+	    spread(Sample_ID, Abundance),
+    file = "outfiles/expr.relative_abundance.all.txt", 
+    sep = "\t", quote = F, row.names = F, col.names = T)
+write.table(ps1 %>% tax_glom(taxrank = "Phylum") %>%
+	    transform_sample_counts(function(x) {x/sum(x)} ) %>% psmelt() %>%
+	    select(Phylum, Sample_ID, Abundance) %>% spread(Sample_ID, Abundance),
+    file = "outfiles/expr.relative_abundance.abphy.txt", 
+    sep = "\t", quote = F, row.names = F, col.names = T)
+write.table(ps1 %>% tax_glom(taxrank = "Class") %>%
+	    transform_sample_counts(function(x) {x/sum(x)} ) %>% psmelt() %>%
+	    select(Class, Sample_ID, Abundance) %>% spread(Sample_ID, Abundance),
+    file = "outfiles/expr.relative_abundance.abcls.txt", 
+    sep = "\t", quote = F, row.names = F, col.names = T)
+write.table(ps1 %>% tax_glom(taxrank = "Family") %>%
+	    transform_sample_counts(function(x) {x/sum(x)} ) %>% psmelt() %>%
+	    select(Family, Sample_ID, Abundance) %>% spread(Sample_ID, Abundance),
+    file = "outfiles/expr.relative_abundance.abfam.txt", 
+    sep = "\t", quote = F, row.names = F, col.names = T)
+write.table(ps1 %>% tax_glom(taxrank = "Genus") %>%
+	    transform_sample_counts(function(x) {x/sum(x)} ) %>% psmelt() %>%
+	    select(Genus, Sample_ID, Abundance) %>% spread(Sample_ID, Abundance),
+    file = "outfiles/expr.relative_abundance.abgen.txt", 
+    sep = "\t", quote = F, row.names = F, col.names = T)
 
 #' 
 #' # Plot abundance
@@ -422,14 +427,13 @@ invisible(dev.off())
 #' 
 ## ----plot_richness------------------------------------------------------------
 # Select alpha-diversity measures
-betaM = c("Observed", "Chao1", "Shannon", "Simpson")
+divIdx = c("Observed", "Chao1", "Shannon", "Simpson")
 
 png("images/plot_richness.png", width = 6, height = 5, units = "in", res = 300)
-plot_richness(ps1, x = "Group2", measures = betaM, color = "Group2", nrow = 1) + 
+plot_richness(ps1, x = "Group2", measures = divIdx, color = "Group2", nrow = 1) + 
 	geom_point(size = 0.8) + theme_bw() + 
 	theme(legend.position = "none", 
-	      axis.text.x = element_text(size = 10, angle = 90, vjust = 0.5, hjust = 1), 
-	      axis.text.y = element_text(size = 10)) + 
+	      axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) + 
 	labs(x = "Group", y = "Alpha Diversity Measure")
 invisible(dev.off())
 
@@ -439,18 +443,18 @@ invisible(dev.off())
 #' Create a long-format data.frame and plot with `ggplot` function
 #' 
 ## ----plot_richness_boxplot----------------------------------------------------
-ad = estimate_richness(ps1, measures = betaM)
+ad = estimate_richness(ps1, measures = divIdx)
 ad = merge(data.frame(sample_data(ps1)), ad, by = "row.names")
-ad = reshape2::melt(ad[,c("Sample_ID", "Group2", betaM)], id = c("Sample_ID", "Group2"))
+ad = ad %>% select(Sample_ID, Group2, all_of(divIdx)) %>% 
+	gather(key = "alpha", value = "measure", -c(Sample_ID, Group2))
 
 png("images/plot_richness_boxplot.png", width = 6, height = 5, units = "in", res = 300)
-ggplot(ad, aes(Group2, value, color = Group2)) + 
+ggplot(ad, aes(Group2, measure, color = Group2)) + 
 	geom_boxplot(outlier.shape = NA, size = 0.8, width = 0.8) + 
 	geom_quasirandom(size = 0.8, color = "black") + theme_bw() + 
-	facet_wrap(~ variable, scales = "free_y", nrow = 1) + 
+	facet_wrap(~ alpha, scales = "free_y", nrow = 1) + 
 	theme(legend.position = "none", 
-	      axis.text.x = element_text(size = 10, angle = 90, vjust = 0.5, hjust = 1), 
-	      axis.text.y = element_text(size = 10)) + 
+	      axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) + 
 	labs(x = "Group", y = "Alpha Diversity Measure")
 invisible(dev.off())
 
@@ -553,14 +557,19 @@ plot_ordination(ps1, ord_vu, type = "samples", color = "Group2",
 #' Permutational multivariate analysis of variance (PERMANOVA) test for differences between independent groups using the `adonis` function
 #' 
 ## ----adonis-------------------------------------------------------------------
+set.seed(12345)
 adonis(dist_un ~ Group2, data.frame(sample_data(ps1)), permutations = 1000)
 
+set.seed(12345)
 adonis(dist_wu ~ Group2, data.frame(sample_data(ps1)), permutations = 1000)
 
+set.seed(12345)
 adonis(dist_vu ~ Group2, data.frame(sample_data(ps1)), permutations = 1000)
 
+set.seed(12345)
 adonis(dist_gu ~ Group2, data.frame(sample_data(ps1)), permutations = 1000)
 
+set.seed(12345)
 adonis(dist_bc ~ Group2, data.frame(sample_data(ps1)), permutations = 1000)
 
 #' 
@@ -570,18 +579,23 @@ adonis(dist_bc ~ Group2, data.frame(sample_data(ps1)), permutations = 1000)
 #' 
 ## ----betadisper---------------------------------------------------------------
 disp1 = betadisper(dist_un, group = data.frame(sample_data(ps1))$Group2)
+set.seed(12345)
 permutest(disp1, permutations = 1000)
 
 disp2 = betadisper(dist_wu, group = data.frame(sample_data(ps1))$Group2) 
+set.seed(12345)
 permutest(disp2, permutations = 1000)
 
 disp3 = betadisper(dist_vu, group = data.frame(sample_data(ps1))$Group2)
+set.seed(12345)
 permutest(disp3, permutations = 1000)
 
 disp4 = betadisper(dist_gu, group = data.frame(sample_data(ps1))$Group2)
+set.seed(12345)
 permutest(disp4, permutations = 1000)
 
 disp5 = betadisper(dist_bc, group = data.frame(sample_data(ps1))$Group2)
+set.seed(12345)
 permutest(disp5, permutations = 1000)
 
 #' 

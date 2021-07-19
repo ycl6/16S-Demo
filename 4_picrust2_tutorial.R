@@ -38,35 +38,32 @@
 #' 
 #' # Workflow (Continues from Part 3)
 #' 
-#' > **Note:** `picrust2` requires Python 3.5 or 3.6
+#' # Run `picrust2`
 #' 
-#' # Activate `picrust2` environment
+#' We will execute the `picrust2` pipeline script in the terminal/console. If you have used `conda` to create an environment for `picrust2`, for example an environment called `picrust2`, you can activate it now to run both programs.
 #' 
-#' > **Note:** Use `conda deactivate` to deactivate from a currently active conda environment if required
+#' > **Note:** Use `conda deactivate` to deactivate from a currently active conda environment if required.
+#' 
+#' * Requires fasta file `expr.asv.fasta` and biom file `expr.biom` generated in [Part 2: phyloseq](2_phyloseq_tutorial.html#Create_output_files)
+#' * The `--output` argument to specify the output folder for final files
+#' * The `--processes N` argument to specify the number of CPUs to run picrust2 in parallel
 #' 
 #' ```
 #' conda activate picrust2
 #' ```
 #' 
-#' # Run `picrust2`
-#' 
-#' * Requires fasta file `expr.asv.fasta` and biom file `expr.biom` generated in [Part 2: phyloseq](2_phyloseq_tutorial.html)
-#' * The `--output` argument to specify the output folder for final files
-#' * The `--processes N` argument to specify the number of CPUs to run picrust2 in parallel
-#' 
 #' ```
 #' picrust2_pipeline.py --study_fasta outfiles/expr.asv.fasta --input outfiles/expr.biom \
-#' 	--output picrust2_out_stratified --processes 6 \
-#' 	--stratified --remove_intermediate --verbose
+#' 	--output picrust2_out_stratified --processes 6 --stratified --remove_intermediate --verbose
 #' ```
 #' 
-#' > Completed PICRUSt2 pipeline in 2389.99 seconds.
+#' > Completed PICRUSt2 pipeline in 2301.59 seconds.
 #' 
-#' > **Note:** Use `conda deactivate` to deactivate the `picrust2` environment if required
+#' > **Note:** Use `conda deactivate` to deactivate from a currently active conda environment if required.
 #' 
 #' # Locate `picrust2` mapfiles
 #' 
-#' Use the `locate` command to locate the PATH that keeps the mapfiles
+#' Use the Linux `locate` commandto locate the PATH that keeps the mapfiles.
 #' 
 #' ```
 #' locate description_mapfiles
@@ -100,18 +97,20 @@
 library("data.table")	# Also requires R.utils to read gz and bz2 files
 library("phyloseq")
 library("ALDEx2")
-library("dplyr")
+library("tidyverse")
 
 #' 
 
 #' 
 #' ## Set `picrust2` output folder
 #' 
-#' Full path is not necessary if `R` is executed in the folder one-level above `picrust2_out_stratified`
+#' Full path is not necessary if `R` is executed in the folder one-level above `picrust2_out_stratified`.
 #' 
 ## ----set-picrust2-output-folder, eval = FALSE---------------------------------
 ## picrust2 = "picrust2_out_stratified"
 
+#' 
+#' Use `list.files` to show files stored in the folder.
 #' 
 ## -----------------------------------------------------------------------------
 list.files(picrust2, recursive = TRUE)
@@ -127,11 +126,13 @@ p2_PW = paste0(picrust2, "/pathways_out/path_abun_unstrat.tsv.gz")
 #' 
 #' ## Set `picrust2` mapfile folder
 #' 
-#' Use the "description_mapfiles" PATH you located with the `locate` command above
+#' Use the "description_mapfiles" PATH you located with the `locate` command [above](#locate-picrust2-mapfiles).
 #' 
 ## ----set-mapfile-folder, eval = FALSE-----------------------------------------
 ## mapfile = "/home/user/miniconda3/envs/picrust2/lib/python3.6/site-packages/picrust2/default_files/description_mapfiles"
 
+#' 
+#' Use `list.files` to show files stored in the folder.
 #' 
 ## -----------------------------------------------------------------------------
 list.files(mapfile, recursive = TRUE)
@@ -164,6 +165,18 @@ mapPW = as.data.frame(fread(mapfile_PW, header = FALSE))
 colnames(mapPW) = c("pathway","description")
 
 #' 
+#' EC map file:
+#' 
+
+#' 
+#' KO map file:
+#' 
+
+#' 
+#' Pathway map file:
+#' 
+
+#' 
 #' ## Load `picrust2` output files
 #' 
 ## ----prepare-input------------------------------------------------------------
@@ -181,6 +194,18 @@ p2PW = as.data.frame(fread(p2_PW))
 rownames(p2PW) = p2PW$"pathway"
 p2PW = as.matrix(p2PW[,-1])
 p2PW = round(p2PW)
+
+#' 
+#' `picrust2` EC output:
+#' 
+
+#' 
+#' `picrust2` KO output:
+#' 
+
+#' 
+#' `picrust2` Pathway output:
+#' 
 
 #' 
 #' ## Subset results
@@ -213,18 +238,21 @@ p2PW2 = p2PW[,sample_names(ps1b)]
 #' **On Subset-1:** Patient vs. control at baseline
 #' 
 ## ----run-ALDEx2-1, cache = TRUE-----------------------------------------------
+# EC
 set.seed(12345)
 system.time({
         aldex2_EC1 = aldex(p2EC1, sample_data(ps1a)$Group, mc.samples = 500, test = "t", 
 			   effect = TRUE, denom = "iqlr", verbose = TRUE)
 })
 
+# KO
 set.seed(12345)
 system.time({
         aldex2_KO1 = aldex(p2KO1, sample_data(ps1a)$Group, mc.samples = 500, test = "t", 
 			   effect = TRUE, denom = "iqlr", verbose = TRUE)
 })
 
+# Pathway
 set.seed(12345)
 system.time({
         aldex2_PW1 = aldex(p2PW1, sample_data(ps1a)$Group, mc.samples = 500, test = "t", 
@@ -235,18 +263,21 @@ system.time({
 #' **On Subset-2:** Patient followup vs. patient baseline
 #' 
 ## ----run-ALDEx2-2, cache = TRUE-----------------------------------------------
+# EC
 set.seed(12345)
 system.time({
         aldex2_EC2 = aldex(p2EC2, sample_data(ps1b)$Time, mc.samples = 500, test = "t", 
 			   effect = TRUE, denom = "iqlr", verbose = TRUE)
 })
 
+# KO
 set.seed(12345)
 system.time({
         aldex2_KO2 = aldex(p2KO2, sample_data(ps1b)$Time, mc.samples = 500, test = "t", 
 			   effect = TRUE, denom = "iqlr", verbose = TRUE)
 })
 
+# Pathway
 set.seed(12345)
 system.time({
         aldex2_PW2 = aldex(p2PW2, sample_data(ps1b)$Time, mc.samples = 500, test = "t", 
@@ -256,8 +287,12 @@ system.time({
 #' 
 #' ## See a ALDEx2 output
 #' 
-## -----------------------------------------------------------------------------
-head(aldex2_EC1)
+#' We can use `head` to view the top N rows of the data stored in the `data.frame`. Below we view the top 10 rows in `aldex2_EC1`:
+#' 
+## ----eval = FALSE-------------------------------------------------------------
+## head(aldex2_EC1, 10)
+
+#' 
 
 #' 
 #' ## Check estimated effect size
@@ -269,15 +304,14 @@ head(aldex2_EC1)
 #' > None of the metabolic predictions show differential abundances between Parkinson's patients and control subjects at baseline
 #' 
 ## -----------------------------------------------------------------------------
-quantile(aldex2_EC1$effect, seq(0, 1, 0.1))
+png("images/ALDEx2_picrust2_effect_1.png", width = 6, height = 6, units = "in", res = 300)
+par(mfrow = c(2,2))
+hist(aldex2_EC1$effect, breaks = 20, xlab = "effect size", col = "yellow", main = "EC")
+hist(aldex2_KO1$effect, breaks = 20, xlab = "effect size", col = "yellow", main = "KO")
+hist(aldex2_PW1$effect, breaks = 20, xlab = "effect size", col = "yellow", main = "Pathway")
+invisible(dev.off())
 
 #' 
-## -----------------------------------------------------------------------------
-quantile(aldex2_KO1$effect, seq(0, 1, 0.1))
-
-#' 
-## -----------------------------------------------------------------------------
-quantile(aldex2_PW1$effect, seq(0, 1, 0.1))
 
 #' 
 #' **On Subset-2:** Patient followup vs. patient baseline
@@ -285,15 +319,14 @@ quantile(aldex2_PW1$effect, seq(0, 1, 0.1))
 #' > None of the metabolic predictions show differential abundances between Parkinson's patients at baseline and at followup
 #' 
 ## -----------------------------------------------------------------------------
-quantile(aldex2_EC2$effect, seq(0, 1, 0.1))
+png("images/ALDEx2_picrust2_effect_2.png", width = 6, height = 6, units = "in", res = 300)
+par(mfrow = c(2,2))
+hist(aldex2_EC2$effect, breaks = 20, xlab = "effect size", col = "yellow", main = "EC")
+hist(aldex2_KO2$effect, breaks = 20, xlab = "effect size", col = "yellow", main = "KO")
+hist(aldex2_PW2$effect, breaks = 20, xlab = "effect size", col = "yellow", main = "Pathway")
+invisible(dev.off())
 
 #' 
-## -----------------------------------------------------------------------------
-quantile(aldex2_KO2$effect, seq(0, 1, 0.1))
-
-#' 
-## -----------------------------------------------------------------------------
-quantile(aldex2_PW2$effect, seq(0, 1, 0.1))
 
 #' 
 #' # Plotting of outputs
@@ -308,7 +341,7 @@ quantile(aldex2_PW2$effect, seq(0, 1, 0.1))
 #' 
 ## ----plot-MW-MA-1-------------------------------------------------------------
 png("images/ALDEx2_picrust2_MW_MA_1.png", width = 6, height = 8, units = "in", res = 300)
-par(mfrow=c(3,2))
+par(mfrow = c(3,2))
 aldex.plot(aldex2_EC1, type = "MW", test = "wilcox", all.cex = 0.4, rare.cex = 0.4, 
 	   called.cex = 0.6, cutoff = 0.05, xlab = "Dispersion", ylab = "Difference")
 title(main = "(EC) MW Plot")
@@ -341,7 +374,7 @@ invisible(dev.off())
 #' 
 ## ----plot-MW-MA-2-------------------------------------------------------------
 png("images/ALDEx2_picrust2_MW_MA_2.png", width = 6, height = 8, units = "in", res = 300)
-par(mfrow=c(3,2))
+par(mfrow = c(3,2))
 aldex.plot(aldex2_EC2, type = "MW", test = "wilcox", all.cex = 0.4, rare.cex = 0.4, 
 	   called.cex = 0.6, cutoff = 0.05, xlab = "Dispersion", ylab = "Difference")
 title(main = "(EC) MW Plot")
@@ -376,7 +409,7 @@ invisible(dev.off())
 #' 
 ## ----plot-P-adjP-1------------------------------------------------------------
 png("images/ALDEx2_picrust2_P_adjP_1.png", width = 6, height = 8, units = "in", res = 300)
-par(mfrow=c(3,2))
+par(mfrow = c(3,2))
 plot(aldex2_EC1$effect, aldex2_EC1$we.ep, log = "y", cex = 0.4, col = "blue", pch = 19, 
      xlab = "Effect size", ylab = "P value", main = "(EC) Effect size plot")
 points(aldex2_EC1$effect, aldex2_EC1$we.eBH, cex = 0.5, col = "red", pch = 19)
@@ -418,7 +451,7 @@ invisible(dev.off())
 #' 
 ## ----plot-P-adjP-2------------------------------------------------------------
 png("images/ALDEx2_picrust2_P_adjP_2.png", width = 6, height = 8, units = "in", res = 300)
-par(mfrow=c(3,2))
+par(mfrow = c(3,2))
 plot(aldex2_EC2$effect, aldex2_EC2$we.ep, log = "y", cex = 0.4, col = "blue", pch = 19, 
      xlab = "Effect size", ylab = "P value", main = "(EC) Effect size plot")
 points(aldex2_EC2$effect, aldex2_EC2$we.eBH, cex = 0.5, col = "red", pch = 19)
